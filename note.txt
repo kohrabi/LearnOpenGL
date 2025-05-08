@@ -1,0 +1,9 @@
+A VBO (Vertex Buffer Object) is used to store the vertex data
+
+So Vertex Attributes is like the location within the shader (location = 0) (Thuộc tính ấy kiểu vậy).
+This will be take data from the currently bounded VBO
+
+A VAO (Vertex Array Object) is used to store the vertex configuration so that you only have to 
+configure it once and use to draw everytime.
+
+element buffer objects (EBO) basically index the indices to draw
