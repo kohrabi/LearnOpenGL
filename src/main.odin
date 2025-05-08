@@ -9,21 +9,6 @@ import glm "core:math/linalg/glsl"
 import gl "vendor:OpenGL"
 import stbi "vendor:stb/image"
 
-SCREEN_WIDTH :: 800;
-SCREEN_HEIGHT :: 600;
-
-OPENGL_VERSION_MAJOR :: 3;
-OPENGL_VERSION_MINOR :: 3;
-
-VAO_COUNT :: 2;
-VBO_COUNT :: 2;
-EBO_COUNT :: 2;
-
-VAOs := make([]u32, VAO_COUNT);
-VBOs := make([]u32, VBO_COUNT);
-EBOs := make([]u32, EBO_COUNT);
-window : glfw.WindowHandle;
-
 view : glm.mat4;
 projection : glm.mat4;
 
@@ -71,33 +56,28 @@ vertices := [?]f32 {
     -0.5,  0.5, -0.5,  0.0, 1.0
 };
 
-main :: proc() {
-    // Init OpenGL
-    glfw.WindowHint(glfw.CONTEXT_VERSION_MAJOR, OPENGL_VERSION_MAJOR);
-    glfw.WindowHint(glfw.CONTEXT_VERSION_MINOR, OPENGL_VERSION_MINOR);
-    glfw.WindowHint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE);
-    
-    assert(glfw.Init() == glfw.TRUE, "Failed to initialize GLFW")
-    
-    window = glfw.CreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Learn OpenGL", nil, nil);
-    
-    defer glfw.Terminate()
-    defer glfw.DestroyWindow(window)
-    assert(window != nil, "Failed to create GLFW window");
-    
-    glfw.MakeContextCurrent(window);
-    glfw.SetFramebufferSizeCallback(window, framebuffer_size_callback);
-    gl.load_up_to(OPENGL_VERSION_MAJOR, OPENGL_VERSION_MINOR, glfw.gl_set_proc_address);
+cubePositions := [?]glm.vec3{
+    {  0.0,  0.0,  0.0 }, 
+    {  2.0,  5.0, -15.0 }, 
+    { -1.5, -2.2, -2.5 },  
+    { -3.8, -2.0, -12.3 },  
+    {  2.4, -0.4, -3.5 },  
+    { -1.7,  3.0, -7.5 },  
+    {  1.3, -2.0, -2.5 },  
+    {  1.5,  2.0, -2.5 }, 
+    {  1.5,  0.2, -1.5 }, 
+    { -1.3,  1.0, -1.5 }
+}
 
-    gl.Viewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+shaderProgram : Shader;
+texture : u32;
+texture2 : u32;
 
-
-    nrAttributes : i32;
-    gl.GetIntegerv(gl.MAX_VERTEX_ATTRIBS, &nrAttributes);
-    fmt.printfln("Maximum nr of vertex attributes supported: %d", nrAttributes);
-
+init :: proc () 
+{
     // Shader
-    shaderProgram, success := shader_load("content/shaders/vertexShader.vert", "content/shaders/fragmentShader.frag");
+    shader, success := shader_load("content/shaders/vertexShader.vert", "content/shaders/fragmentShader.frag");
+    shaderProgram = shader;
     assert(success != 0, "Failed to load shader");
     // -----------------
 
@@ -109,7 +89,6 @@ main :: proc() {
     imageData2 := stbi.load("content/textures/awesomeface.png", &width2, &height2, &nrChannels2, 0);
     assert(imageData2 != nil, "Failed to load texture");
     
-    texture : u32;
     gl.GenTextures(1, &texture);
     gl.BindTexture(gl.TEXTURE_2D, texture);
     gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
@@ -120,7 +99,6 @@ main :: proc() {
     gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGB, width, height, 0, gl.RGB, gl.UNSIGNED_BYTE, imageData);
     gl.GenerateMipmap(gl.TEXTURE_2D);
 
-    texture2 : u32;
     gl.GenTextures(1, &texture2);
     gl.BindTexture(gl.TEXTURE_2D, texture2);
     gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
@@ -161,63 +139,63 @@ main :: proc() {
 
     gl.Enable(gl.DEPTH_TEST);
 
-    cubePositions := [?]glm.vec3{
-        {  0.0,  0.0,  0.0 }, 
-        {  2.0,  5.0, -15.0 }, 
-        { -1.5, -2.2, -2.5 },  
-        { -3.8, -2.0, -12.3 },  
-        {  2.4, -0.4, -3.5 },  
-        { -1.7,  3.0, -7.5 },  
-        {  1.3, -2.0, -2.5 },  
-        {  1.5,  2.0, -2.5 }, 
-        {  1.5,  0.2, -1.5 }, 
-        { -1.3,  1.0, -1.5 }
+}
+
+update :: proc() {
+    processInput(window);
+}
+
+draw :: proc () {
+    // Draw
+    time : f32 = cast (f32) glfw.GetTime();
+        
+    view = glm.identity(glm.mat4);
+    view *= glm.mat4Translate(glm.vec3{ 0.0, 0.0, -3.0 });
+    
+    projection = glm.mat4Perspective(glm.radians_f32(45.0), cast (f32)SCREEN_WIDTH / cast (f32)SCREEN_HEIGHT, 0.1, 100);
+    
+    gl.ClearColor(0.2, 0.3, 0.3, 1.0)
+    gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+    shader_use(shaderProgram); 
+    
+    gl.ActiveTexture(gl.TEXTURE0);
+    gl.BindTexture(gl.TEXTURE_2D, texture);
+    
+    gl.ActiveTexture(gl.TEXTURE1);
+    gl.BindTexture(gl.TEXTURE_2D, texture2);
+    
+    gl.BindVertexArray(VAOs[0]);
+
+    shader_set_mat4(shaderProgram, "view", view);
+    shader_set_mat4(shaderProgram, "projection", projection);     
+    for pos, index in cubePositions {
+        model := glm.identity(glm.mat4);
+        model *= glm.mat4Translate(pos);
+        if (index % 3 == 0) {
+            model *= glm.mat4Rotate(glm.vec3{ 0.5, 1.0, 0.0 }, time * glm.radians_f32(-55.0));
+        }
+        else {
+            model *= glm.mat4Rotate(glm.vec3{ 0.5, 1.0, 0.0 }, glm.radians_f32(-55.0));  
+        }
+        shader_set_mat4(shaderProgram, "model", model);
+        gl.DrawArrays(gl.TRIANGLES, 0, 36);
     }
+
+    gl.BindVertexArray(0);
+}
+
+main :: proc() {
+    opengl_init()
+    defer opengl_destroy()
+    
+    init();
     
     for (!glfw.WindowShouldClose(window)) {
         glfw.PollEvents();
+        
+        update();
 
-        
-        // Update
-        processInput(window);
-        
-        time : f32 = cast (f32) glfw.GetTime();
-        
-        // Draw
-        
-        view = glm.identity(glm.mat4);
-        view *= glm.mat4Translate(glm.vec3{ 0.0, 0.0, -3.0 });
-        
-        projection = glm.mat4Perspective(glm.radians_f32(45.0), cast (f32)SCREEN_WIDTH / cast (f32)SCREEN_HEIGHT, 0.1, 100);
-        
-        gl.ClearColor(0.2, 0.3, 0.3, 1.0)
-        gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-        shader_use(shaderProgram); 
-        
-        gl.ActiveTexture(gl.TEXTURE0);
-        gl.BindTexture(gl.TEXTURE_2D, texture);
-        
-        gl.ActiveTexture(gl.TEXTURE1);
-        gl.BindTexture(gl.TEXTURE_2D, texture2);
-        
-        gl.BindVertexArray(VAOs[0]);
-
-        shader_set_mat4(shaderProgram, "view", view);
-        shader_set_mat4(shaderProgram, "projection", projection);     
-        for pos, index in cubePositions {
-            model := glm.identity(glm.mat4);
-            model *= glm.mat4Translate(pos);
-            if (index % 3 == 0) {
-                model *= glm.mat4Rotate(glm.vec3{ 0.5, 1.0, 0.0 }, time * glm.radians_f32(-55.0));
-            }
-            else {
-                model *= glm.mat4Rotate(glm.vec3{ 0.5, 1.0, 0.0 }, glm.radians_f32(-55.0));  
-            }
-            shader_set_mat4(shaderProgram, "model", model);
-            gl.DrawArrays(gl.TRIANGLES, 0, 36);
-        }
- 
-        gl.BindVertexArray(0);
+        draw();
         
         glfw.SwapBuffers(window);
     }
