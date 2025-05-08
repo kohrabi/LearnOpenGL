@@ -4,6 +4,7 @@ import "core:fmt"
 import "core:c"
 import "vendor:glfw"
 import "core:os"
+import "core:math"
 import gl "vendor:OpenGL"
 
 SCREEN_WIDTH :: 800;
@@ -49,37 +50,26 @@ main :: proc() {
 
     gl.Viewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-    // Shader
-    vertexShader : u32 = load_shader(gl.VERTEX_SHADER, "vertexShader.vert");
-    fragmentShader : u32 = load_shader(gl.FRAGMENT_SHADER, "fragmentShader.frag");
-    shaderProgram : u32 = gl.CreateProgram();
-    gl.AttachShader(shaderProgram, vertexShader);
-    gl.AttachShader(shaderProgram, fragmentShader);
-    gl.LinkProgram(shaderProgram);
 
-    programSuccess : i32;
-    infoLog : [^]byte;
-    gl.GetProgramiv(shaderProgram, gl.LINK_STATUS, &programSuccess); 
-    if programSuccess == 0 {
-        gl.GetShaderInfoLog(shaderProgram, 512, nil, infoLog);
-        fmt.eprintfln("ERROR SHADER LINK FAILURE\n%s", infoLog);
-        return;
-    }
-    
-    gl.DeleteShader(vertexShader);
-    gl.DeleteShader(fragmentShader);
+    nrAttributes : i32;
+    gl.GetIntegerv(gl.MAX_VERTEX_ATTRIBS, &nrAttributes);
+    fmt.printfln("Maximum nr of vertex attributes supported: %d", nrAttributes);
+
+    // Shader
+    shaderProgram, success := load_shader("vertexShader.vert", "fragmentShader.frag");
+    assert(success != 0, "Failed to load shader");
     // -----------------
 
     vertices := [?]f32 {
-         0.5,   0.5,  0.0,  // top right
-         0.5,  -0.5,  0.0,  // bottom right
-        -0.5,  -0.5, 0.0,  // bottom left
-        -0.5,   0.5, 0.0   // top left 
+        // positions         // colors
+        0.5, -0.5, 0.0,  1.0, 0.0, 0.0,   // bottom right
+        -0.5, -0.5, 0.0,  0.0, 1.0, 0.0,   // bottom let
+        0.0,  0.5, 0.0,  0.0, 0.0, 1.0    // top 
     };
     
     indices := [?]u32 {
-        0, 1, 3, // first triangle 
-        1, 2, 3  // second TRIANGLES
+        0, 1, 2, // first triangle 
+        0, 1, 2
     }
     
     gl.GenVertexArrays(VAO_COUNT, raw_data(VAOs));
@@ -93,8 +83,11 @@ main :: proc() {
     gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, EBOs[0]); 
     gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, size_of(indices), &indices, gl.STATIC_DRAW);
     
-    gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 3 * size_of(f32), 0);
+    gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 6 * size_of(f32), (0));
     gl.EnableVertexAttribArray(0);
+    gl.VertexAttribPointer(1, 3, gl.FLOAT, gl.FALSE, 6 * size_of(f32), (3 * size_of(f32)));
+    gl.EnableVertexAttribArray(1);
+
 
     gl.BindVertexArray(0);
     gl.BindBuffer(gl.ARRAY_BUFFER, 0);
@@ -107,9 +100,14 @@ main :: proc() {
         gl.ClearColor(0.2, 0.3, 0.3, 1.0)
         gl.Clear(gl.COLOR_BUFFER_BIT)
         
-        gl.UseProgram(shaderProgram);
+        use_shader(shaderProgram); 
+
+        timeValue : f64 = glfw.GetTime();
+        greenValue : f32 = f32((math.sin(timeValue) / 2.0) + 0.5);
+        set_float(shaderProgram, "xOffset", greenValue);
+        
         gl.BindVertexArray(VAOs[0]);
-        gl.DrawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, nil);
+        gl.DrawElements(gl.TRIANGLES, 3, gl.UNSIGNED_INT, nil);
         gl.BindVertexArray(0);
         
         glfw.SwapBuffers(window);
@@ -119,34 +117,9 @@ main :: proc() {
     gl.DeleteVertexArrays(VAO_COUNT, raw_data(VAOs));
     gl.DeleteBuffers(VBO_COUNT, raw_data(VBOs));
     gl.DeleteBuffers(EBO_COUNT, raw_data(EBOs));
-    gl.DeleteProgram(shaderProgram);
+    gl.DeleteProgram(shaderProgram.id);
 
     return;
-}
-
-load_shader :: proc (type: u32, file_name : string) -> u32 {
-    
-    data, success := os.read_entire_file_from_filename(file_name);
-    if !success {
-        fmt.eprintln("Unable to read file");
-        return 0;
-    }
-    shaderSource : cstring = cstring(raw_data(data));
-
-    shader : u32 = gl.CreateShader(type);
-    gl.ShaderSource(shader, 1, &shaderSource, nil);
-    gl.CompileShader(shader);
-
-    shaderSuccess : i32;
-    infoLog : [^]byte;
-    gl.GetShaderiv(shader, gl.COMPILE_STATUS, &shaderSuccess); 
-    if shaderSuccess == 0 {
-        gl.GetShaderInfoLog(shader, 512, nil, infoLog);
-        fmt.eprintfln("ERROR SHADER %s COMPILATION FAILURE\n", (type == gl.VERTEX_SHADER ? "Vertex" : "Fragment"));
-        fmt.eprintfln("%s", infoLog);
-        return 0;
-    }
-    return shader;
 }
 
 framebuffer_size_callback :: proc "c" (window: glfw.WindowHandle, width, height: i32) {

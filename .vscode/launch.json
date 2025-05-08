@@ -6,6 +6,7 @@
             "request": "launch",
             "preLaunchTask": "Build",
             "name": "Debug",
+            "console": "externalTerminal",
             "program": "${workspaceFolder}/build/debug.exe",
             "args": [],
             "cwd": "${workspaceFolder}"
