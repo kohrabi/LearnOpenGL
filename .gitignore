@@ -7,4 +7,5 @@
 # Compiled Pre-Linked Libraries
 *.plx
 
-build/
+*.exe
+*.pdb
