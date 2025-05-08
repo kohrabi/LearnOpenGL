@@ -7,3 +7,15 @@ A VAO (Vertex Array Object) is used to store the vertex configuration so that yo
 configure it once and use to draw everytime.
 
 element buffer objects (EBO) basically index the indices to draw
+
+Texture Unit tells OpenGL what "texture location" to bind to. Have to be set manually by dev through uniform and
+BindTexture Slot.
+
+NDC (Normalized device coordinates): the space in which opengl rasterize vertex into pixel
+Local Space(Object Space): where the vertex is comparing to the local origin
+Model Matrix
+World Space: where the object is comparing to the world origin
+View Matrix
+View Space: the object relative to the camera
+Projection Matrix
+Clip Space: Determine which vertex is going to be on screen

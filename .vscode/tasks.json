@@ -3,25 +3,24 @@
     "command": "",
     "args": [],
     "tasks": [
-        {
-            "label": "mkdir",
-            "type": "shell",
-            "command": "cmd",
-            "args": [
-                "/C",
-                "if not exist .\\build mkdir .\\build"
-            ]
-        },
+        // {
+        //     "label": "mkdir",
+        //     "type": "shell",
+        //     "command": "cmd",
+        //     "args": [
+        //         "/C",
+        //         "if not exist .\\build mkdir .\\build"
+        //     ]
+        // },
         {
             "label": "build",
             "type": "shell",
-            "command": "odin build . -debug -out:build/debug.exe",
+            "command": "debugBuild.bat",
             "group": "build"
         },
         {
-            "label": "Build",
+            "label": "Debug Build",
             "dependsOn": [
-                "mkdir",
                 "build"
             ]
         }

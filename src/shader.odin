@@ -3,6 +3,8 @@ package main
 import "core:os"
 import "core:fmt"
 import gl "vendor:OpenGL"
+import "core:math/linalg"
+import glm "core:math/linalg/glsl"
 
 Shader :: struct {
     id : u32,
@@ -10,15 +12,15 @@ Shader :: struct {
     fragmentPath : string,
 }
 
-use_shader :: proc (shader : Shader) {
+shader_use :: proc (shader : Shader) {
     gl.UseProgram(shader.id);
 }
 
-load_shader :: proc (vertexPath : string, fragmentPath : string) -> (shader : Shader, success: int) {    
+shader_load :: proc (vertexPath : string, fragmentPath : string) -> (shader : Shader, success: int) {    
     shader = { 0, vertexPath, fragmentPath };
     success = 0;
-    vertexShader : u32 = load_shader_file(gl.VERTEX_SHADER, "vertexShader.vert");
-    fragmentShader : u32 = load_shader_file(gl.FRAGMENT_SHADER, "fragmentShader.frag");
+    vertexShader : u32 = shader_load_shader_file(gl.VERTEX_SHADER, vertexPath);
+    fragmentShader : u32 = shader_load_shader_file(gl.FRAGMENT_SHADER, fragmentPath);
     shader.id = gl.CreateProgram();
     gl.AttachShader(shader.id, vertexShader);
     gl.AttachShader(shader.id, fragmentShader);
@@ -33,38 +35,47 @@ load_shader :: proc (vertexPath : string, fragmentPath : string) -> (shader : Sh
         return
     }
     success = 1;
-    gl.DeleteShader(vertexShader);
-    gl.DeleteShader(fragmentShader);
+
+    defer gl.DeleteShader(vertexShader);
+    defer gl.DeleteShader(fragmentShader);
+
     return
 }
 
-set_float :: proc (shader : Shader, name : cstring, value : f32) {
+
+shader_set_mat4 :: proc (shader : Shader, name : cstring, value : glm.mat4) {
+    location := gl.GetUniformLocation(shader.id, name);
+    matrixFlatten := linalg.matrix_flatten(value);
+    gl.UniformMatrix4fv(location, 1, gl.FALSE, raw_data(&matrixFlatten));
+}
+
+shader_set_float :: proc (shader : Shader, name : cstring, value : f32) {
     location := gl.GetUniformLocation(shader.id, name);
     gl.Uniform1f(location, value);
 }
 
-set_vec2 :: proc (shader : Shader, name : cstring, value : vec2) {
+shader_set_vec2 :: proc (shader : Shader, name : cstring, value : glm.vec2) {
     location := gl.GetUniformLocation(shader.id, name);
     gl.Uniform2f(location, value.x, value.y);
 }
 
-set_vec3 :: proc (shader : Shader, name : cstring, value : vec3) {
+shader_set_vec3 :: proc (shader : Shader, name : cstring, value : glm.vec3) {
     location := gl.GetUniformLocation(shader.id, name);
     gl.Uniform3f(location, value.x, value.y, value.z);
 }
 
-set_vec4 :: proc (shader : Shader, name : cstring, value : vec4) {
+shader_set_vec4 :: proc (shader : Shader, name : cstring, value : glm.vec4) {
     location := gl.GetUniformLocation(shader.id, name);
     gl.Uniform4f(location, value.x, value.y, value.z, value.w);
 }
 
-set_int :: proc (shader : Shader, name : cstring, value : i32) {
+shader_set_int :: proc (shader : Shader, name : cstring, value : i32) {
     location := gl.GetUniformLocation(shader.id, name);
     gl.Uniform1i(location, value);
 }
 
 @(private="file")
-load_shader_file :: proc (type: u32, file_name : string) -> u32 {
+shader_load_shader_file :: proc (type: u32, file_name : string) -> u32 {
     
     data, success := os.read_entire_file_from_filename(file_name);
     if !success {
