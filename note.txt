@@ -19,3 +19,32 @@ View Matrix
 View Space: the object relative to the camera
 Projection Matrix
 Clip Space: Determine which vertex is going to be on screen
+
+Camera:
+Camera look at negative z (weird)
+
+We get the camera position
+We get the look at position
+=> camera direction aka camera front but not Normalized
+We cross camFront with WORLD_UP we get the fucking => camera right
+and we move like normal
+
+remember this u fucking forget u stupid fuck
+cos alpha = kề / huyền
+sin alpha = đối / huyền
+
+also forget this:
+lấy state của key press rồi thì lưu prev state lại đúng ko thì nếu nó chưa release thì nó down
+just pressed là down prev not down
+just release là not down prev down
+
+yaw, pitch, roll
+yaw => x = cos yaw, z = sin yaw
+
+pitch => y = sin pitch
+
+but here is the fucking thing
+imagine a 3d triangle and a sphere. Pick a point, so that the camera look at it right?
+So project that bitch on to the xz plane. and then to x plane and z plane.
+So right now cos pitch will be affecting the fucking yaw. huyền in yaw isn't 1 anymore
+so we have to multiply it.
