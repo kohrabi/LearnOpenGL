@@ -42,6 +42,7 @@ shader_load :: proc (vertexPath : string, fragmentPath : string) -> (shader : Sh
     return
 }
 
+shader_set :: proc { shader_set_mat4, shader_set_float, shader_set_vec2, shader_set_vec3, shader_set_vec4, shader_set_int }
 
 shader_set_mat4 :: proc (shader : Shader, name : cstring, value : glm.mat4) {
     location := gl.GetUniformLocation(shader.id, name);

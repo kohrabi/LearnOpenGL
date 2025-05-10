@@ -72,6 +72,12 @@ cubePositions := [?]glm.vec3{
 shaderProgram : Shader;
 texture : u32;
 texture2 : u32;
+prevTime : f32;
+time : f32;
+deltaTime : f32;
+
+camera : Camera;
+fov : f32 = 45.0;
 
 init :: proc () 
 {
@@ -79,35 +85,14 @@ init :: proc ()
     shader, success := shader_load("content/shaders/vertexShader.vert", "content/shaders/fragmentShader.frag");
     shaderProgram = shader;
     assert(success != 0, "Failed to load shader");
-    // -----------------
+    // ----------------
 
     stbi.set_flip_vertically_on_load(1);
-    width, height, nrChannels : i32;
-    imageData := stbi.load("content/textures/wall.jpg", &width, &height, &nrChannels, 0);
-    assert(imageData != nil, "Failed to load texture");
-    width2, height2, nrChannels2 : i32;
-    imageData2 := stbi.load("content/textures/awesomeface.png", &width2, &height2, &nrChannels2, 0);
-    assert(imageData2 != nil, "Failed to load texture");
-    
-    gl.GenTextures(1, &texture);
-    gl.BindTexture(gl.TEXTURE_2D, texture);
-    gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-    gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-    gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-    gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-
-    gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGB, width, height, 0, gl.RGB, gl.UNSIGNED_BYTE, imageData);
-    gl.GenerateMipmap(gl.TEXTURE_2D);
-
-    gl.GenTextures(1, &texture2);
-    gl.BindTexture(gl.TEXTURE_2D, texture2);
-    gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-    gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-    gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-    gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width2, height2, 0, gl.RGBA, gl.UNSIGNED_BYTE, imageData2);
-    gl.GenerateMipmap(gl.TEXTURE_2D);
-   
+    width, height, nrChannels: i32;
+    texture, width, height, nrChannels = texture_load("content/textures/wall.jpg");
+    width2, height2, nrChannels2: i32;
+    texture2, width2, height2, nrChannels2 = texture_load("content/textures/awesomeface.png");
+ 
     gl.GenVertexArrays(VAO_COUNT, raw_data(VAOs));
     gl.GenBuffers(VBO_COUNT, raw_data(VBOs));
     gl.GenBuffers(EBO_COUNT, raw_data(EBOs));
@@ -129,33 +114,64 @@ init :: proc ()
     gl.BindVertexArray(0);
     gl.BindBuffer(gl.ARRAY_BUFFER, 0);
     gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, 0);
-    stbi.image_free(imageData)    
-    stbi.image_free(imageData2)
 
     shader_use(shaderProgram); // don't forget to activate the shader before setting uniforms!  
-    shader_set_int(shaderProgram, "mainTexture", 0);
-    shader_set_int(shaderProgram, "texture1", 1);
+    shader_set(shaderProgram, "mainTexture", 0);
+    shader_set(shaderProgram, "texture1", 1);
     fmt.println("Successful :D");
 
     gl.Enable(gl.DEPTH_TEST);
 
+    camera.yaw = glm.radians_f32(-90.0);
+    camera.pitch = 0.0;
+    camera.position = glm.vec3{ 0.0, 0.0, 0.0, };
+    camera_update_direction_vectors(&camera);
 }
 
 update :: proc() {
-    processInput(window);
+    prevTime = time;
+    time = cast (f32) glfw.GetTime();
+    deltaTime = time - prevTime;
+
+    if (is_key_down(glfw.KEY_ESCAPE)) {
+        glfw.SetWindowShouldClose(window, true);
+    }
+
+    cameraSpeed : f32 = 5 * deltaTime;
+    if (is_key_down(glfw.KEY_W)) {
+        camera.position += cameraSpeed * camera.front;
+    }
+    if (is_key_down(glfw.KEY_S)) {
+        camera.position -= cameraSpeed * camera.front;
+    }
+    if (is_key_down(glfw.KEY_D)) {
+        camera.position += cameraSpeed * camera.right;
+    }
+    if (is_key_down(glfw.KEY_A)) {
+        camera.position -= cameraSpeed * camera.right;
+    }
+    fov = glm.clamp(fov - cast (f32) yScrollOffset, 1.0, 180.0);
+
+    sensitivity :: 0.001;
+    maxPitch :: 89.0 * glm.PI / 180.0;
+    mouseOffset := mousePos - prevMousePos;
+    mouseOffset *= sensitivity;
+    camera.yaw += mouseOffset.x;
+    camera.pitch = glm.clamp_f32(camera.pitch - mouseOffset.y, -maxPitch, maxPitch);
+    camera_update_direction_vectors(&camera);
 }
 
 draw :: proc () {
     // Draw
-    time : f32 = cast (f32) glfw.GetTime();
-        
-    view = glm.identity(glm.mat4);
-    view *= glm.mat4Translate(glm.vec3{ 0.0, 0.0, -3.0 });
-    
-    projection = glm.mat4Perspective(glm.radians_f32(45.0), cast (f32)SCREEN_WIDTH / cast (f32)SCREEN_HEIGHT, 0.1, 100);
-    
     gl.ClearColor(0.2, 0.3, 0.3, 1.0)
     gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+        
+    projection = glm.mat4Perspective(glm.radians(fov), (f32)(screenWidth / screenHeight), 0.1, 100);
+
+    radius :: 10.0;
+
+    view = glm.mat4LookAt(camera.position, camera.position + camera.front, WORLD_UP);
+
     shader_use(shaderProgram); 
     
     gl.ActiveTexture(gl.TEXTURE0);
@@ -166,18 +182,18 @@ draw :: proc () {
     
     gl.BindVertexArray(VAOs[0]);
 
-    shader_set_mat4(shaderProgram, "view", view);
-    shader_set_mat4(shaderProgram, "projection", projection);     
+    shader_set(shaderProgram, "view", view);
+    shader_set(shaderProgram, "projection", projection);     
     for pos, index in cubePositions {
-        model := glm.identity(glm.mat4);
+        model : glm.mat4 = glm.identity(glm.mat4);
         model *= glm.mat4Translate(pos);
         if (index % 3 == 0) {
-            model *= glm.mat4Rotate(glm.vec3{ 0.5, 1.0, 0.0 }, time * glm.radians_f32(-55.0));
+            model *= glm.mat4Rotate(glm.vec3{ 0.5, 1.0, 0.0 }, (f32)(time) * glm.radians_f32(-55.0));
         }
         else {
             model *= glm.mat4Rotate(glm.vec3{ 0.5, 1.0, 0.0 }, glm.radians_f32(-55.0));  
         }
-        shader_set_mat4(shaderProgram, "model", model);
+        shader_set(shaderProgram, "model", model);
         gl.DrawArrays(gl.TRIANGLES, 0, 36);
     }
 
@@ -197,6 +213,8 @@ main :: proc() {
 
         draw();
         
+        set_previous_input_state();
+        
         glfw.SwapBuffers(window);
     }
 
@@ -206,14 +224,4 @@ main :: proc() {
     gl.DeleteProgram(shaderProgram.id);
 
     return;
-}
-
-framebuffer_size_callback :: proc "c" (window: glfw.WindowHandle, width, height: i32) {
-    gl.Viewport(0, 0, width, height);
-}
-
-processInput :: proc (window: glfw.WindowHandle) {
-    if (glfw.GetKey(window, glfw.KEY_ESCAPE) == glfw.PRESS) {
-        glfw.SetWindowShouldClose(window, true);
-    }
 }
