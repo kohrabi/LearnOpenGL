@@ -13,47 +13,47 @@ view : glm.mat4;
 projection : glm.mat4;
 
 vertices := [?]f32 {
-    -0.5, -0.5, -0.5,  0.0, 0.0,
-     0.5, -0.5, -0.5,  1.0, 0.0,
-     0.5,  0.5, -0.5,  1.0, 1.0,
-     0.5,  0.5, -0.5,  1.0, 1.0,
-    -0.5,  0.5, -0.5,  0.0, 1.0,
-    -0.5, -0.5, -0.5,  0.0, 0.0,
+    -0.5, -0.5, -0.5,
+     0.5, -0.5, -0.5,
+     0.5,  0.5, -0.5,
+     0.5,  0.5, -0.5,
+    -0.5,  0.5, -0.5,
+    -0.5, -0.5, -0.5,
 
-    -0.5, -0.5,  0.5,  0.0, 0.0,
-     0.5, -0.5,  0.5,  1.0, 0.0,
-     0.5,  0.5,  0.5,  1.0, 1.0,
-     0.5,  0.5,  0.5,  1.0, 1.0,
-    -0.5,  0.5,  0.5,  0.0, 1.0,
-    -0.5, -0.5,  0.5,  0.0, 0.0,
+    -0.5, -0.5,  0.5,
+     0.5, -0.5,  0.5,
+     0.5,  0.5,  0.5,
+     0.5,  0.5,  0.5,
+    -0.5,  0.5,  0.5,
+    -0.5, -0.5,  0.5,
 
-    -0.5,  0.5,  0.5,  1.0, 0.0,
-    -0.5,  0.5, -0.5,  1.0, 1.0,
-    -0.5, -0.5, -0.5,  0.0, 1.0,
-    -0.5, -0.5, -0.5,  0.0, 1.0,
-    -0.5, -0.5,  0.5,  0.0, 0.0,
-    -0.5,  0.5,  0.5,  1.0, 0.0,
+    -0.5,  0.5,  0.5,
+    -0.5,  0.5, -0.5,
+    -0.5, -0.5, -0.5,
+    -0.5, -0.5, -0.5,
+    -0.5, -0.5,  0.5,
+    -0.5,  0.5,  0.5,
 
-     0.5,  0.5,  0.5,  1.0, 0.0,
-     0.5,  0.5, -0.5,  1.0, 1.0,
-     0.5, -0.5, -0.5,  0.0, 1.0,
-     0.5, -0.5, -0.5,  0.0, 1.0,
-     0.5, -0.5,  0.5,  0.0, 0.0,
-     0.5,  0.5,  0.5,  1.0, 0.0,
+     0.5,  0.5,  0.5,
+     0.5,  0.5, -0.5,
+     0.5, -0.5, -0.5,
+     0.5, -0.5, -0.5,
+     0.5, -0.5,  0.5,
+     0.5,  0.5,  0.5,
 
-    -0.5, -0.5, -0.5,  0.0, 1.0,
-     0.5, -0.5, -0.5,  1.0, 1.0,
-     0.5, -0.5,  0.5,  1.0, 0.0,
-     0.5, -0.5,  0.5,  1.0, 0.0,
-    -0.5, -0.5,  0.5,  0.0, 0.0,
-    -0.5, -0.5, -0.5,  0.0, 1.0,
+    -0.5, -0.5, -0.5,
+     0.5, -0.5, -0.5,
+     0.5, -0.5,  0.5,
+     0.5, -0.5,  0.5,
+    -0.5, -0.5,  0.5,
+    -0.5, -0.5, -0.5,
 
-    -0.5,  0.5, -0.5,  0.0, 1.0,
-     0.5,  0.5, -0.5,  1.0, 1.0,
-     0.5,  0.5,  0.5,  1.0, 0.0,
-     0.5,  0.5,  0.5,  1.0, 0.0,
-    -0.5,  0.5,  0.5,  0.0, 0.0,
-    -0.5,  0.5, -0.5,  0.0, 1.0
+    -0.5,  0.5, -0.5,
+     0.5,  0.5, -0.5,
+     0.5,  0.5,  0.5,
+     0.5,  0.5,  0.5,
+    -0.5,  0.5,  0.5,
+    -0.5,  0.5, -0.5,
 };
 
 cubePositions := [?]glm.vec3{
@@ -69,9 +69,9 @@ cubePositions := [?]glm.vec3{
     { -1.3,  1.0, -1.5 }
 }
 
-shaderProgram : Shader;
-texture : u32;
-texture2 : u32;
+lightShader : Shader;
+shader : Shader;
+
 prevTime : f32;
 time : f32;
 deltaTime : f32;
@@ -79,19 +79,18 @@ deltaTime : f32;
 camera : Camera;
 fov : f32 = 45.0;
 
+lightPos :: glm.vec3{ 1.2, 1.0, 2.0 };
+
 init :: proc () 
 {
     // Shader
-    shader, success := shader_load("content/shaders/vertexShader.vert", "content/shaders/fragmentShader.frag");
-    shaderProgram = shader;
-    assert(success != 0, "Failed to load shader");
+    success : b8;
+    shader, success = shader_load("content/shaders/normal/vertexShader.vert", "content/shaders/normal/fragmentShader.frag");
+    shader = shader;
+    assert(success == true, "Failed to load shader");
     // ----------------
 
     stbi.set_flip_vertically_on_load(1);
-    width, height, nrChannels: i32;
-    texture, width, height, nrChannels = texture_load("content/textures/wall.jpg");
-    width2, height2, nrChannels2: i32;
-    texture2, width2, height2, nrChannels2 = texture_load("content/textures/awesomeface.png");
  
     gl.GenVertexArrays(VAO_COUNT, raw_data(VAOs));
     gl.GenBuffers(VBO_COUNT, raw_data(VBOs));
@@ -100,31 +99,39 @@ init :: proc ()
     gl.BindVertexArray(VAOs[0]);
     gl.BindBuffer(gl.ARRAY_BUFFER, VBOs[0]);
     gl.BufferData(gl.ARRAY_BUFFER, size_of(vertices), &vertices, gl.STATIC_DRAW);
-    
-    // gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, EBOs[0]); 
-    // gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, size_of(indices), &indices, gl.STATIC_DRAW);
-    
-    gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 5 * size_of(f32), (0));
-    gl.EnableVertexAttribArray(0);
-    gl.VertexAttribPointer(1, 3, gl.FLOAT, gl.FALSE, 5 * size_of(f32), (3 * size_of(f32)));
-    gl.EnableVertexAttribArray(1);
-    // gl.VertexAttribPointer(2, 3, gl.FLOAT, gl.FALSE, 8 * size_of(f32), (6 * size_of(f32)));
-    // gl.EnableVertexAttribArray(2);
 
+    gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 3 * size_of(f32), (0));
+    gl.EnableVertexAttribArray(0);
+    
     gl.BindVertexArray(0);
     gl.BindBuffer(gl.ARRAY_BUFFER, 0);
     gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, 0);
+    
+    shader_use(shader); // don't forget to activate the shader before setting uniforms!  
+    shader_set(shader, "objectColor", glm.vec3{ 1.0, 0.5, 0.31 });
+    shader_set(shader, "lightColor", glm.vec3{ 1.0, 1.0, 1.0 });
+    
+    lightShader, success = 
+        shader_load("content/shaders/light/lightVertexShader.vert", "content/shaders/light/lightFragmentShader.frag");
+    assert(success == true, "Failed to load shader");
 
-    shader_use(shaderProgram); // don't forget to activate the shader before setting uniforms!  
-    shader_set(shaderProgram, "mainTexture", 0);
-    shader_set(shaderProgram, "texture1", 1);
-    fmt.println("Successful :D");
+    gl.BindVertexArray(VAOs[1]);
+
+    gl.BindBuffer(gl.ARRAY_BUFFER, VBOs[0]);
+    // gl.BufferData(gl.ARRAY_BUFFER, size_of(vertices), &vertices, gl.STATIC_DRAW);
+
+    gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 3 * size_of(f32), 0);
+    gl.EnableVertexAttribArray(0);
+     
+    gl.BindVertexArray(0);
+    gl.BindBuffer(gl.ARRAY_BUFFER, 0);
+    gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, 0);
 
     gl.Enable(gl.DEPTH_TEST);
 
     camera.yaw = glm.radians_f32(-90.0);
     camera.pitch = 0.0;
-    camera.position = glm.vec3{ 0.0, 0.0, 0.0, };
+    camera.position = glm.vec3{ 0.0, 0.0, 5.0, };
     camera_update_direction_vectors(&camera);
 }
 
@@ -172,30 +179,24 @@ draw :: proc () {
 
     view = glm.mat4LookAt(camera.position, camera.position + camera.front, WORLD_UP);
 
-    shader_use(shaderProgram); 
-    
-    gl.ActiveTexture(gl.TEXTURE0);
-    gl.BindTexture(gl.TEXTURE_2D, texture);
-    
-    gl.ActiveTexture(gl.TEXTURE1);
-    gl.BindTexture(gl.TEXTURE_2D, texture2);
-    
+    shader_use(shader); 
+
     gl.BindVertexArray(VAOs[0]);
 
-    shader_set(shaderProgram, "view", view);
-    shader_set(shaderProgram, "projection", projection);     
-    for pos, index in cubePositions {
-        model : glm.mat4 = glm.identity(glm.mat4);
-        model *= glm.mat4Translate(pos);
-        if (index % 3 == 0) {
-            model *= glm.mat4Rotate(glm.vec3{ 0.5, 1.0, 0.0 }, (f32)(time) * glm.radians_f32(-55.0));
-        }
-        else {
-            model *= glm.mat4Rotate(glm.vec3{ 0.5, 1.0, 0.0 }, glm.radians_f32(-55.0));  
-        }
-        shader_set(shaderProgram, "model", model);
-        gl.DrawArrays(gl.TRIANGLES, 0, 36);
-    }
+    shader_set(shader, "view", view);
+    shader_set(shader, "projection", projection);    
+    shader_set(shader, "model", glm.identity(glm.mat4));
+    gl.DrawArrays(gl.TRIANGLES, 0, 36);
+
+    shader_use(lightShader);
+    gl.BindVertexArray(VAOs[1]);
+    shader_set(lightShader, "view", view);
+    shader_set(lightShader, "projection", projection);    
+    model : glm.mat4 = glm.identity(glm.mat4);
+    model *= glm.mat4Translate(lightPos); 
+    model *= glm.mat4Scale(glm.vec3{0.2, 0.2, 0.2});
+    shader_set(lightShader, "model", model);
+    gl.DrawArrays(gl.TRIANGLES, 0, 36);
 
     gl.BindVertexArray(0);
 }
@@ -221,7 +222,8 @@ main :: proc() {
     gl.DeleteVertexArrays(VAO_COUNT, raw_data(VAOs));
     gl.DeleteBuffers(VBO_COUNT, raw_data(VBOs));
     gl.DeleteBuffers(EBO_COUNT, raw_data(EBOs));
-    gl.DeleteProgram(shaderProgram.id);
+    gl.DeleteProgram(shader.id);
+    gl.DeleteProgram(lightShader.id);
 
     return;
 }

@@ -2,9 +2,11 @@ package main
 
 import "vendor:glfw"
 import "core:fmt"
+import "core:strconv"
 import gl "vendor:OpenGL"
 import stbi "vendor:stb/image"
 import glm "core:math/linalg/glsl"
+import "base:runtime"
 
 SCREEN_WIDTH :: 800;
 SCREEN_HEIGHT :: 600;
@@ -49,31 +51,31 @@ texture_load :: proc(path : string) -> (texture: u32, width, height, nrChannels:
 }
 
 opengl_init :: proc () {
+
      // Init OpenGL
     glfw.WindowHint(glfw.CONTEXT_VERSION_MAJOR, OPENGL_VERSION_MAJOR);
     glfw.WindowHint(glfw.CONTEXT_VERSION_MINOR, OPENGL_VERSION_MINOR);
     glfw.WindowHint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE);
-    
+
     assert(glfw.Init() == glfw.TRUE, "Failed to initialize GLFW")
     
     window = glfw.CreateWindow(screenWidth, screenHeight, "Learn OpenGL", nil, nil);
     
     assert(window != nil, "Failed to create GLFW window");
-    
+        
+    glfw.SetErrorCallback(error_callback);
+    glfw.SetInputMode(window, glfw.CURSOR, glfw.CURSOR_DISABLED);
+    glfw.SetCursorPosCallback(window, mouse_callback);
+    glfw.SetKeyCallback(window, key_callback);
+    glfw.SetScrollCallback(window, scroll_callback);
+   
     glfw.MakeContextCurrent(window);
     glfw.SetFramebufferSizeCallback(window, framebuffer_size_callback);
     gl.load_up_to(OPENGL_VERSION_MAJOR, OPENGL_VERSION_MINOR, glfw.gl_set_proc_address);
 
     gl.Viewport(0, 0, screenWidth, screenHeight);
 
-    nrAttributes : i32;
-    gl.GetIntegerv(gl.MAX_VERTEX_ATTRIBS, &nrAttributes);
-    fmt.printfln("Maximum nr of vertex attributes supported: %d", nrAttributes);
-
-    glfw.SetInputMode(window, glfw.CURSOR, glfw.CURSOR_DISABLED);
-    glfw.SetCursorPosCallback(window, mouse_callback);
-    glfw.SetKeyCallback(window, key_callback);
-    glfw.SetScrollCallback(window, scroll_callback);
+    fmt.println("Initialize OpenGL Successful!");
 }
 
 opengl_destroy :: proc () {
@@ -93,6 +95,11 @@ is_key_down :: proc(keyCode : i32) -> b8 { return keyDown[keyCode]; }
 is_key_just_pressed :: proc(keyCode : i32) -> b8 { return keyDown[keyCode] && !prevKeyDown[keyCode]; }
 is_key_just_released :: proc(keyCode : i32) -> b8 { return !keyDown[keyCode] && prevKeyDown[keyCode]; }
 is_key_mode_down :: proc(keyModCode : i8) -> b8 { return (keyMods & keyModCode) > 0;  }
+
+error_callback :: proc "c"(errorCode: i32, description: cstring) {
+    context = runtime.default_context();
+    fmt.eprintln(description, errorCode);
+}
 
 framebuffer_size_callback :: proc "c" (window: glfw.WindowHandle, width, height: i32) {
     screenWidth = width;

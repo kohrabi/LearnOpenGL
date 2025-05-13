@@ -16,9 +16,9 @@ shader_use :: proc (shader : Shader) {
     gl.UseProgram(shader.id);
 }
 
-shader_load :: proc (vertexPath : string, fragmentPath : string) -> (shader : Shader, success: int) {    
+shader_load :: proc (vertexPath : string, fragmentPath : string) -> (shader : Shader, success: b8) {    
     shader = { 0, vertexPath, fragmentPath };
-    success = 0;
+    success = false;
     vertexShader : u32 = shader_load_shader_file(gl.VERTEX_SHADER, vertexPath);
     fragmentShader : u32 = shader_load_shader_file(gl.FRAGMENT_SHADER, fragmentPath);
     shader.id = gl.CreateProgram();
@@ -34,7 +34,7 @@ shader_load :: proc (vertexPath : string, fragmentPath : string) -> (shader : Sh
         fmt.eprintfln("ERROR SHADER LINK FAILURE\n%s", infoLog);
         return
     }
-    success = 1;
+    success = true;
 
     defer gl.DeleteShader(vertexShader);
     defer gl.DeleteShader(fragmentShader);
