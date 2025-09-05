@@ -12,50 +12,50 @@ import stbi "vendor:stb/image"
 view : glm.mat4;
 projection : glm.mat4;
 
-vertices := [?]f32 {
-    -0.5, -0.5, -0.5,
-     0.5, -0.5, -0.5,
-     0.5,  0.5, -0.5,
-     0.5,  0.5, -0.5,
-    -0.5,  0.5, -0.5,
-    -0.5, -0.5, -0.5,
+vertices := [?]f32{
+    // positions          // normals           // texture coords
+    -0.5, -0.5, -0.5,  0.0,  0.0, -1.0,  0.0, 0.0,
+     0.5, -0.5, -0.5,  0.0,  0.0, -1.0,  1.0, 0.0,
+     0.5,  0.5, -0.5,  0.0,  0.0, -1.0,  1.0, 1.0,
+     0.5,  0.5, -0.5,  0.0,  0.0, -1.0,  1.0, 1.0,
+    -0.5,  0.5, -0.5,  0.0,  0.0, -1.0,  0.0, 1.0,
+    -0.5, -0.5, -0.5,  0.0,  0.0, -1.0,  0.0, 0.0,
 
-    -0.5, -0.5,  0.5,
-     0.5, -0.5,  0.5,
-     0.5,  0.5,  0.5,
-     0.5,  0.5,  0.5,
-    -0.5,  0.5,  0.5,
-    -0.5, -0.5,  0.5,
+    -0.5, -0.5,  0.5,  0.0,  0.0, 1.0,   0.0, 0.0,
+     0.5, -0.5,  0.5,  0.0,  0.0, 1.0,   1.0, 0.0,
+     0.5,  0.5,  0.5,  0.0,  0.0, 1.0,   1.0, 1.0,
+     0.5,  0.5,  0.5,  0.0,  0.0, 1.0,   1.0, 1.0,
+    -0.5,  0.5,  0.5,  0.0,  0.0, 1.0,   0.0, 1.0,
+    -0.5, -0.5,  0.5,  0.0,  0.0, 1.0,   0.0, 0.0,
 
-    -0.5,  0.5,  0.5,
-    -0.5,  0.5, -0.5,
-    -0.5, -0.5, -0.5,
-    -0.5, -0.5, -0.5,
-    -0.5, -0.5,  0.5,
-    -0.5,  0.5,  0.5,
+    -0.5,  0.5,  0.5, -1.0,  0.0,  0.0,  1.0, 0.0,
+    -0.5,  0.5, -0.5, -1.0,  0.0,  0.0,  1.0, 1.0,
+    -0.5, -0.5, -0.5, -1.0,  0.0,  0.0,  0.0, 1.0,
+    -0.5, -0.5, -0.5, -1.0,  0.0,  0.0,  0.0, 1.0,
+    -0.5, -0.5,  0.5, -1.0,  0.0,  0.0,  0.0, 0.0,
+    -0.5,  0.5,  0.5, -1.0,  0.0,  0.0,  1.0, 0.0,
 
-     0.5,  0.5,  0.5,
-     0.5,  0.5, -0.5,
-     0.5, -0.5, -0.5,
-     0.5, -0.5, -0.5,
-     0.5, -0.5,  0.5,
-     0.5,  0.5,  0.5,
+     0.5,  0.5,  0.5,  1.0,  0.0,  0.0,  1.0, 0.0,
+     0.5,  0.5, -0.5,  1.0,  0.0,  0.0,  1.0, 1.0,
+     0.5, -0.5, -0.5,  1.0,  0.0,  0.0,  0.0, 1.0,
+     0.5, -0.5, -0.5,  1.0,  0.0,  0.0,  0.0, 1.0,
+     0.5, -0.5,  0.5,  1.0,  0.0,  0.0,  0.0, 0.0,
+     0.5,  0.5,  0.5,  1.0,  0.0,  0.0,  1.0, 0.0,
 
-    -0.5, -0.5, -0.5,
-     0.5, -0.5, -0.5,
-     0.5, -0.5,  0.5,
-     0.5, -0.5,  0.5,
-    -0.5, -0.5,  0.5,
-    -0.5, -0.5, -0.5,
+    -0.5, -0.5, -0.5,  0.0, -1.0,  0.0,  0.0, 1.0,
+     0.5, -0.5, -0.5,  0.0, -1.0,  0.0,  1.0, 1.0,
+     0.5, -0.5,  0.5,  0.0, -1.0,  0.0,  1.0, 0.0,
+     0.5, -0.5,  0.5,  0.0, -1.0,  0.0,  1.0, 0.0,
+    -0.5, -0.5,  0.5,  0.0, -1.0,  0.0,  0.0, 0.0,
+    -0.5, -0.5, -0.5,  0.0, -1.0,  0.0,  0.0, 1.0,
 
-    -0.5,  0.5, -0.5,
-     0.5,  0.5, -0.5,
-     0.5,  0.5,  0.5,
-     0.5,  0.5,  0.5,
-    -0.5,  0.5,  0.5,
-    -0.5,  0.5, -0.5,
+    -0.5,  0.5, -0.5,  0.0,  1.0,  0.0,  0.0, 1.0,
+     0.5,  0.5, -0.5,  0.0,  1.0,  0.0,  1.0, 1.0,
+     0.5,  0.5,  0.5,  0.0,  1.0,  0.0,  1.0, 0.0,
+     0.5,  0.5,  0.5,  0.0,  1.0,  0.0,  1.0, 0.0,
+    -0.5,  0.5,  0.5,  0.0,  1.0,  0.0,  0.0, 0.0,
+    -0.5,  0.5, -0.5,  0.0,  1.0,  0.0,  0.0, 1.0
 };
-
 cubePositions := [?]glm.vec3{
     {  0.0,  0.0,  0.0 }, 
     {  2.0,  5.0, -15.0 }, 
@@ -78,17 +78,22 @@ deltaTime : f32;
 
 camera : Camera;
 fov : f32 = 45.0;
+diffuseMap : u32;   
 
 lightPos :: glm.vec3{ 1.2, 1.0, 2.0 };
 
 init :: proc () 
 {
     // Shader
+    // Cube    
     success : b8;
     shader, success = shader_load("content/shaders/normal/vertexShader.vert", "content/shaders/normal/fragmentShader.frag");
-    shader = shader;
+    // shader = shader;
     assert(success == true, "Failed to load shader");
     // ----------------
+
+    diffuseMap, width, height, nrChannels := texture_load("content/textures/container2.png");
+    diffuseMap = diffuseMap;
 
     stbi.set_flip_vertically_on_load(1);
  
@@ -100,9 +105,14 @@ init :: proc ()
     gl.BindBuffer(gl.ARRAY_BUFFER, VBOs[0]);
     gl.BufferData(gl.ARRAY_BUFFER, size_of(vertices), &vertices, gl.STATIC_DRAW);
 
-    gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 3 * size_of(f32), (0));
+    gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 9 * size_of(f32), (0));
     gl.EnableVertexAttribArray(0);
-    
+    gl.VertexAttribPointer(1, 3, gl.FLOAT, gl.FALSE, 9 * size_of(f32), 3 * size_of(f32));
+    gl.EnableVertexAttribArray(1);
+    gl.VertexAttribPointer(2, 3, gl.FLOAT, gl.FALSE, 9 * size_of(f32), 6 * size_of(f32));
+    gl.EnableVertexAttribArray(2);
+
+
     gl.BindVertexArray(0);
     gl.BindBuffer(gl.ARRAY_BUFFER, 0);
     gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, 0);
@@ -111,6 +121,7 @@ init :: proc ()
     shader_set(shader, "objectColor", glm.vec3{ 1.0, 0.5, 0.31 });
     shader_set(shader, "lightColor", glm.vec3{ 1.0, 1.0, 1.0 });
     
+    // Light
     lightShader, success = 
         shader_load("content/shaders/light/lightVertexShader.vert", "content/shaders/light/lightFragmentShader.frag");
     assert(success == true, "Failed to load shader");
@@ -120,9 +131,9 @@ init :: proc ()
     gl.BindBuffer(gl.ARRAY_BUFFER, VBOs[0]);
     // gl.BufferData(gl.ARRAY_BUFFER, size_of(vertices), &vertices, gl.STATIC_DRAW);
 
-    gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 3 * size_of(f32), 0);
+    gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 9 * size_of(f32), 0);
     gl.EnableVertexAttribArray(0);
-     
+
     gl.BindVertexArray(0);
     gl.BindBuffer(gl.ARRAY_BUFFER, 0);
     gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, 0);
@@ -186,12 +197,36 @@ draw :: proc () {
     shader_set(shader, "view", view);
     shader_set(shader, "projection", projection);    
     shader_set(shader, "model", glm.identity(glm.mat4));
+    shader_set(shader, "viewPos", camera.position);
+
+    shader_set(shader, "material.ambient", glm.vec3{1.0, 0.5, 0.31});
+    shader_set(shader, "material.diffuse", 0);
+    shader_set(shader, "material.specular", glm.vec3{1.0, 0.5, 0.31});
+    shader_set(shader, "material.shininess", 32.0);
+
+    gl.ActiveTexture(gl.TEXTURE0);
+    gl.BindTexture(gl.TEXTURE_2D, diffuseMap);
+
+    lightColor : glm.vec3;
+    lightColor.x = (f32)(math.sin(glfw.GetTime() * 2.0));
+    lightColor.y = (f32)(math.sin(glfw.GetTime() * 0.7));
+    lightColor.z = (f32)(math.sin(glfw.GetTime() * 1.3));
+
+    diffuseColor : glm.vec3 = lightColor   * glm.vec3(0.5);
+    ambientColor : glm.vec3 = diffuseColor * glm.vec3(0.2);
+
+    shader_set(shader, "light.position", lightPos);
+    shader_set(shader, "light.ambient", ambientColor);
+    shader_set(shader, "light.diffuse", diffuseColor);
+    shader_set(shader, "light.specular", glm.vec3{1.0, 1.0, 1.0});
+
     gl.DrawArrays(gl.TRIANGLES, 0, 36);
 
     shader_use(lightShader);
     gl.BindVertexArray(VAOs[1]);
     shader_set(lightShader, "view", view);
     shader_set(lightShader, "projection", projection);    
+    
     model : glm.mat4 = glm.identity(glm.mat4);
     model *= glm.mat4Translate(lightPos); 
     model *= glm.mat4Scale(glm.vec3{0.2, 0.2, 0.2});
