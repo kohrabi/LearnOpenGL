@@ -8,6 +8,8 @@ import "core:math"
 import glm "core:math/linalg/glsl"
 import gl "vendor:OpenGL"
 import stbi "vendor:stb/image"
+import raylib "vendor:raylib"
+import ecs "ecs"
 
 view : glm.mat4;
 projection : glm.mat4;
@@ -56,19 +58,6 @@ vertices := [?]f32{
     -0.5,  0.5,  0.5,  0.0,  1.0,  0.0,  0.0, 0.0,
     -0.5,  0.5, -0.5,  0.0,  1.0,  0.0,  0.0, 1.0
 };
-cubePositions := [?]glm.vec3{
-    {  0.0,  0.0,  0.0 }, 
-    {  2.0,  5.0, -15.0 }, 
-    { -1.5, -2.2, -2.5 },  
-    { -3.8, -2.0, -12.3 },  
-    {  2.4, -0.4, -3.5 },  
-    { -1.7,  3.0, -7.5 },  
-    {  1.3, -2.0, -2.5 },  
-    {  1.5,  2.0, -2.5 }, 
-    {  1.5,  0.2, -1.5 }, 
-    { -1.3,  1.0, -1.5 }
-}
-
 lightShader : Shader;
 shader : Shader;
 
@@ -78,12 +67,25 @@ deltaTime : f32;
 
 camera : Camera;
 fov : f32 = 45.0;
-diffuseMap : u32;   
+diffuseMap : u32;
+specularMap : u32;
+
+ecsRegistry : ecs.Registry;
 
 lightPos :: glm.vec3{ 1.2, 1.0, 2.0 };
 
 init :: proc () 
 {
+    stbi.set_flip_vertically_on_load(1);
+
+    mapTexture : u32;
+    mapWidth, mapHeight, mapNrChannels : i32;
+    mapTexture, mapWidth, mapHeight, mapNrChannels = texture_load("content/textures/container2.png");
+    diffuseMap = mapTexture;
+
+    mapTexture, mapWidth, mapHeight, mapNrChannels = texture_load("content/textures/container2_specular.png");
+    specularMap = mapTexture;
+
     // Shader
     // Cube    
     success : b8;
@@ -92,10 +94,6 @@ init :: proc ()
     assert(success == true, "Failed to load shader");
     // ----------------
 
-    diffuseMap, width, height, nrChannels := texture_load("content/textures/container2.png");
-    diffuseMap = diffuseMap;
-
-    stbi.set_flip_vertically_on_load(1);
  
     gl.GenVertexArrays(VAO_COUNT, raw_data(VAOs));
     gl.GenBuffers(VBO_COUNT, raw_data(VBOs));
@@ -105,11 +103,11 @@ init :: proc ()
     gl.BindBuffer(gl.ARRAY_BUFFER, VBOs[0]);
     gl.BufferData(gl.ARRAY_BUFFER, size_of(vertices), &vertices, gl.STATIC_DRAW);
 
-    gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 9 * size_of(f32), (0));
+    gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 8 * size_of(f32), (0));
     gl.EnableVertexAttribArray(0);
-    gl.VertexAttribPointer(1, 3, gl.FLOAT, gl.FALSE, 9 * size_of(f32), 3 * size_of(f32));
+    gl.VertexAttribPointer(1, 3, gl.FLOAT, gl.FALSE, 8 * size_of(f32), 3 * size_of(f32));
     gl.EnableVertexAttribArray(1);
-    gl.VertexAttribPointer(2, 3, gl.FLOAT, gl.FALSE, 9 * size_of(f32), 6 * size_of(f32));
+    gl.VertexAttribPointer(2, 2, gl.FLOAT, gl.FALSE, 8 * size_of(f32), 6 * size_of(f32));
     gl.EnableVertexAttribArray(2);
 
 
@@ -131,7 +129,7 @@ init :: proc ()
     gl.BindBuffer(gl.ARRAY_BUFFER, VBOs[0]);
     // gl.BufferData(gl.ARRAY_BUFFER, size_of(vertices), &vertices, gl.STATIC_DRAW);
 
-    gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 9 * size_of(f32), 0);
+    gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 8 * size_of(f32), 0);
     gl.EnableVertexAttribArray(0);
 
     gl.BindVertexArray(0);
@@ -144,6 +142,11 @@ init :: proc ()
     camera.pitch = 0.0;
     camera.position = glm.vec3{ 0.0, 0.0, 5.0, };
     camera_update_direction_vectors(&camera);
+    
+    shader_use(shader); 
+    shader_set(shader, "material.diffuse", 0);
+    shader_use(shader); 
+    shader_set(shader, "material.specular", 1);
 }
 
 update :: proc() {
@@ -198,27 +201,17 @@ draw :: proc () {
     shader_set(shader, "projection", projection);    
     shader_set(shader, "model", glm.identity(glm.mat4));
     shader_set(shader, "viewPos", camera.position);
-
-    shader_set(shader, "material.ambient", glm.vec3{1.0, 0.5, 0.31});
-    shader_set(shader, "material.diffuse", 0);
-    shader_set(shader, "material.specular", glm.vec3{1.0, 0.5, 0.31});
-    shader_set(shader, "material.shininess", 32.0);
-
+    
     gl.ActiveTexture(gl.TEXTURE0);
     gl.BindTexture(gl.TEXTURE_2D, diffuseMap);
-
-    lightColor : glm.vec3;
-    lightColor.x = (f32)(math.sin(glfw.GetTime() * 2.0));
-    lightColor.y = (f32)(math.sin(glfw.GetTime() * 0.7));
-    lightColor.z = (f32)(math.sin(glfw.GetTime() * 1.3));
-
-    diffuseColor : glm.vec3 = lightColor   * glm.vec3(0.5);
-    ambientColor : glm.vec3 = diffuseColor * glm.vec3(0.2);
+    gl.ActiveTexture(gl.TEXTURE1);
+    gl.BindTexture(gl.TEXTURE_2D, specularMap);
+    shader_set(shader, "material.shininess", 32.0);
 
     shader_set(shader, "light.position", lightPos);
-    shader_set(shader, "light.ambient", ambientColor);
-    shader_set(shader, "light.diffuse", diffuseColor);
-    shader_set(shader, "light.specular", glm.vec3{1.0, 1.0, 1.0});
+    shader_set(shader, "light.ambient", glm.vec3{ 0.2, 0.2, 0.2 });
+    shader_set(shader, "light.diffuse", glm.vec3{ 0.5, 0.5, 0.5 });
+    shader_set(shader, "light.specular", glm.vec3{ 1.0, 1.0, 1.0 });
 
     gl.DrawArrays(gl.TRIANGLES, 0, 36);
 
@@ -241,6 +234,17 @@ main :: proc() {
     defer opengl_destroy()
     
     init();
+    
+    ecsRegistry = ecs.ecs_create();
+    ecs.ecs_component_register(&ecsRegistry, ecs.Transform);
+    test := ecs.ecs_entity_create(&ecsRegistry);
+    ecs.ecs_entity_add_component(&ecsRegistry, test, ecs.Transform {
+        position = glm.vec3{ 0.0, 0.0, 0.0 },
+        rotation = glm.vec3{ 0.0, 0.0, 0.0 },
+        scale    = glm.vec3{ 1.0, 1.0, 1.0 },
+    });
+    positionComponent, ok := ecs.ecs_entity_get_component(&ecsRegistry, test, ecs.Transform);
+    // fmt.println("Position Component: ", positionComponent^);
     
     for (!glfw.WindowShouldClose(window)) {
         glfw.PollEvents();

@@ -32,11 +32,22 @@ mousePos : glm.vec2;
 prevMousePos : glm.vec2;
 yScrollOffset : f64;
 
-texture_load :: proc(path : string) -> (texture: u32, width, height, nrChannels: i32) {
-    imageData := stbi.load("content/textures/wall.jpg", &width, &height, &nrChannels, 0);
+texture_load :: proc(path : cstring) -> (texture: u32, width, height, nrChannels: i32) {
+    imageData := stbi.load(path, &width, &height, &nrChannels, 0);
     assert(imageData != nil, "Failed to load texture");
-
+    
     defer stbi.image_free(imageData);
+    
+    format : gl.GL_Enum;
+    switch (nrChannels) {
+        case 1: format = gl.GL_Enum.RED;
+        case 3: format = gl.GL_Enum.RGB;
+        case 4: format = gl.GL_Enum.RGBA;
+        case: {
+            fmt.printfln("Texture format not supported: %d", nrChannels);
+            assert(false);
+        }
+    }
 
     gl.GenTextures(1, &texture);
     gl.BindTexture(gl.TEXTURE_2D, texture);
@@ -45,7 +56,7 @@ texture_load :: proc(path : string) -> (texture: u32, width, height, nrChannels:
     gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
     gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 
-    gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGB, width, height, 0, gl.RGB, gl.UNSIGNED_BYTE, imageData);
+    gl.TexImage2D(gl.TEXTURE_2D, 0, cast(i32)format, width, height, 0, cast(u32)format, gl.UNSIGNED_BYTE, imageData);
     gl.GenerateMipmap(gl.TEXTURE_2D);
     return
 }
